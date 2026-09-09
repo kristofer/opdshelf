@@ -1,42 +1,26 @@
-FROM oven/bun:1-alpine AS base
-
-# Install dependencies only when needed
-FROM base AS deps
+FROM golang:1.25-bookworm AS builder
 WORKDIR /app
-COPY package.json bun.lock* ./
-RUN bun install --frozen-lockfile
 
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+COPY go.mod go.sum ./
+RUN go mod download
+
 COPY . .
-RUN bun run build:css
+RUN CGO_ENABLED=0 go build -o /out/gopdshelf ./cmd/gopdshelf
 
-# Production image, copy all the files and run next
-FROM base AS runner
+FROM debian:bookworm-slim
 WORKDIR /app
 
-ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOST=0.0.0.0
 ENV BOOKS_DIR=/app/books
+ENV DATABASE_PATH=/app/data/gopdshelf.db
 
-# Copy built files
-COPY --from=builder /app/src ./src
-COPY --from=builder /app/views ./views
-COPY --from=builder /app/static ./static
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /out/gopdshelf /usr/local/bin/gopdshelf
+COPY static ./static
 
-# Create books directory
-RUN mkdir -p /app/books
+RUN mkdir -p /app/books /app/data
 
-# Expose the port
 EXPOSE 3000
+VOLUME ["/app/books", "/app/data"]
 
-# Create volume for persistent storage of books
-VOLUME ["/app/books"]
-
-# Run the application
-CMD ["bun", "run", "src/index.ts"]
+CMD ["gopdshelf"]

@@ -1,7 +1,8 @@
 .env
 .github
-opds-server.exe
 books/
+data/
 node_modules
+gopdshelf
+opds-server.exe
 github
-static/styles/app.css
