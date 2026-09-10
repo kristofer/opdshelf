@@ -2,7 +2,7 @@ name: Build and Push Docker image
 
 on:
   push:
-    branches: [main]
+    branches: [main] # o la rama que prefieras
   workflow_dispatch:
 
 jobs:
@@ -25,9 +25,9 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: koalilla/gopdshelf:latest
+          tags: koalilla/opds-server:latest
